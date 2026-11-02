@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#f4f7f3" />
+    <meta name="description" content="BMI를 계산하고 날짜별 건강 기록을 브라우저에 안전하게 저장하세요." />
+    <title>Health Tracker | 나의 건강 기록</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/static/styles.css" />
+    <script src="/static/app.js" defer></script>
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <a class="brand" href="/" aria-label="Health Tracker 홈">
+          <span class="brand-mark" aria-hidden="true">✳</span>
+          <span>well<span class="brand-dot">.</span>day</span>
+        </a>
+        <span class="privacy-note"><span class="privacy-dot"></span> 이 브라우저에만 저장돼요</span>
+      </header>
+
+      <main>
+        <section class="intro" aria-labelledby="page-title">
+          <p class="eyebrow">YOUR PERSONAL HEALTH JOURNAL</p>
+          <h1 id="page-title">오늘의 나를<br class="mobile-break" /> <span>기록해요.</span></h1>
+          <p class="intro-copy">작은 기록이 모여 건강한 습관이 돼요.<br />몸의 변화를 천천히 살펴보세요.</p>
+        </section>
+
+        <section class="dashboard" aria-label="건강 기록 대시보드">
+          <article class="card entry-card">
+            <div class="section-heading">
+              <div>
+                <p class="eyebrow">DAILY CHECK-IN</p>
+                <h2>오늘의 건강 기록</h2>
+              </div>
+              <span class="heading-icon" aria-hidden="true">＋</span>
+            </div>
+
+            <form id="health-form" novalidate>
+              <label class="field-label" for="record-date">기록 날짜</label>
+              <input id="record-date" name="date" type="date" required />
+
+              <div class="measurements">
+                <div class="field-group">
+                  <label class="field-label" for="height">키</label>
+                  <div class="input-with-unit">
+                    <input id="height" name="height" type="number" inputmode="decimal" min="50" max="250" step="0.1" placeholder="예: 165" required />
+                    <span>cm</span>
+                  </div>
+                </div>
+                <div class="field-group">
+                  <label class="field-label" for="weight">몸무게</label>
+                  <div class="input-with-unit">
+                    <input id="weight" name="weight" type="number" inputmode="decimal" min="10" max="500" step="0.1" placeholder="예: 58" required />
+                    <span>kg</span>
+                  </div>
+                </div>
+              </div>
+
+              <p id="form-error" class="form-error" role="alert" aria-live="polite"></p>
+              <button class="primary-button" type="submit">BMI 계산하고 기록하기 <span aria-hidden="true">→</span></button>
+            </form>
+
+            <div id="result" class="result-panel" hidden aria-live="polite">
+              <div>
+                <p class="result-label">체질량지수 BMI</p>
+                <p class="result-value"><strong id="bmi-value">—</strong> <span>kg/m²</span></p>
+              </div>
+              <span id="bmi-category" class="category-badge"></span>
+              <p id="bmi-guidance" class="result-guidance"></p>
+            </div>
+
+            <div class="bmi-guide">
+              <p class="guide-title">BMI 범위 안내 <span>· 성인 참고 기준</span></p>
+              <div class="range-list" aria-label="BMI 범위">
+                <span><i class="range-dot under"></i>저체중 <b>&lt; 18.5</b></span>
+                <span><i class="range-dot normal"></i>정상 <b>18.5–22.9</b></span>
+                <span><i class="range-dot over"></i>과체중 <b>23–24.9</b></span>
+                <span><i class="range-dot obese"></i>비만 <b>25 이상</b></span>
+              </div>
+              <p class="disclaimer">BMI는 참고 지표이며 개인의 건강 상태를 진단하지 않아요.</p>
+            </div>
+          </article>
+
+          <div class="right-column">
+            <article class="card chart-card">
+              <div class="section-heading compact-heading">
+                <div>
+                  <p class="eyebrow">YOUR PROGRESS</p>
+                  <h2>BMI 변화</h2>
+                </div>
+                <span id="record-count" class="record-count">0 기록</span>
+              </div>
+              <div class="chart-wrap" id="chart-wrap">
+                <canvas id="bmi-chart" role="img" aria-label="날짜별 BMI 변화 그래프"></canvas>
+                <div id="chart-empty" class="chart-empty">
+                  <span aria-hidden="true">〰</span>
+                  <p>기록이 쌓이면<br />변화 그래프를 볼 수 있어요.</p>
+                </div>
+              </div>
+              <div class="chart-legend"><span class="legend-line"></span> 나의 BMI</div>
+            </article>
+
+            <article class="card history-card">
+              <div class="section-heading compact-heading">
+                <div>
+                  <p class="eyebrow">RECENT ACTIVITY</p>
+                  <h2>기록 목록</h2>
+                </div>
+              </div>
+              <div id="records-list" class="records-list"></div>
+              <p id="records-empty" class="records-empty">아직 기록이 없어요.<br />첫 건강 기록을 남겨보세요!</p>
+            </article>
+          </div>
+        </section>
+      </main>
+
+      <footer>나를 돌보는 가장 작은 습관 <span>·</span> well.day</footer>
+    </div>
+  </body>
+</html>
