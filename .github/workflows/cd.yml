@@ -33,7 +33,7 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Pull image and replace container
-        shell: pwsh
+        shell: powershell
         run: |
           if ($env:IMAGE_TAG -notmatch '^[0-9a-f]{40}$') {
             throw "Unexpected commit SHA: $env:IMAGE_TAG"
@@ -66,12 +66,12 @@ jobs:
           }
 
       - name: Check deployed health endpoint
-        shell: pwsh
+        shell: powershell
         run: |
           $uri = 'http://localhost:8001/health'
           for ($attempt = 1; $attempt -le 15; $attempt++) {
             try {
-              $response = Invoke-WebRequest -Uri $uri -TimeoutSec 5
+              $response = Invoke-WebRequest -Uri $uri -UseBasicParsing -TimeoutSec 5
               if ($response.StatusCode -eq 200) {
                 Write-Host "Health check passed: $uri"
                 exit 0
@@ -87,9 +87,27 @@ jobs:
 
       - name: Print Docker diagnostics on failure
         if: failure()
-        shell: pwsh
+        shell: powershell
         run: |
+          $ErrorActionPreference = 'Continue'
+
           Write-Host '=== Docker containers ==='
-          docker container ls --all 2>&1 | Write-Output
+          $containerOutput = docker container ls --all 2>&1
+          $containerExitCode = $LASTEXITCODE
+          foreach ($line in $containerOutput) {
+            Write-Host $line
+          }
+          if ($containerExitCode -ne 0) {
+            Write-Host "Could not list containers (exit code $containerExitCode)."
+          }
+
           Write-Host '=== health-tracker-hw3 container logs ==='
-          docker logs --tail 100 health-tracker-hw3 2>&1 | Write-Output
+          $logOutput = docker logs --tail 100 health-tracker-hw3 2>&1
+          $logExitCode = $LASTEXITCODE
+          foreach ($line in $logOutput) {
+            Write-Host $line
+          }
+          if ($logExitCode -ne 0) {
+            Write-Host "Could not read container logs (exit code $logExitCode)."
+          }
+          exit 0
