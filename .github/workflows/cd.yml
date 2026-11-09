@@ -1,0 +1,95 @@
+name: Deploy Health Tracker
+
+on:
+  workflow_run:
+    workflows:
+      - Build and Publish Health Tracker Image
+    types:
+      - completed
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    name: Deploy on Windows self-hosted runner
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_branch == 'main' &&
+      github.event.workflow_run.head_repository.full_name == github.repository
+    runs-on: [self-hosted, Windows, X64]
+    env:
+      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+      IMAGE_TAG: ${{ github.event.workflow_run.head_sha }}
+
+    steps:
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Pull image and replace container
+        shell: pwsh
+        run: |
+          if ($env:IMAGE_TAG -notmatch '^[0-9a-f]{40}$') {
+            throw "Unexpected commit SHA: $env:IMAGE_TAG"
+          }
+          if ([string]::IsNullOrWhiteSpace($env:DOCKERHUB_USERNAME)) {
+            throw 'DOCKERHUB_USERNAME is not configured.'
+          }
+
+          $image = "$($env:DOCKERHUB_USERNAME)/health-tracker:$($env:IMAGE_TAG)"
+          Write-Host "Pulling $image"
+          docker pull $image
+          if ($LASTEXITCODE -ne 0) {
+            throw "Docker image pull failed with exit code $LASTEXITCODE."
+          }
+
+          $existing = docker container ls --all --filter 'name=^/health-tracker-hw3$' --format '{{.Names}}'
+          if ($LASTEXITCODE -ne 0) {
+            throw "Could not inspect existing containers (exit code $LASTEXITCODE)."
+          }
+          if ($existing -contains 'health-tracker-hw3') {
+            docker container rm --force health-tracker-hw3
+            if ($LASTEXITCODE -ne 0) {
+              throw "Could not remove the existing container (exit code $LASTEXITCODE)."
+            }
+          }
+
+          docker run --detach --name health-tracker-hw3 --restart unless-stopped --publish 8001:8000 $image
+          if ($LASTEXITCODE -ne 0) {
+            throw "Could not start the replacement container (exit code $LASTEXITCODE)."
+          }
+
+      - name: Check deployed health endpoint
+        shell: pwsh
+        run: |
+          $uri = 'http://localhost:8001/health'
+          for ($attempt = 1; $attempt -le 15; $attempt++) {
+            try {
+              $response = Invoke-WebRequest -Uri $uri -TimeoutSec 5
+              if ($response.StatusCode -eq 200) {
+                Write-Host "Health check passed: $uri"
+                exit 0
+              }
+              Write-Host "Attempt $attempt returned HTTP $($response.StatusCode)."
+            }
+            catch {
+              Write-Host "Attempt $attempt failed: $($_.Exception.Message)"
+            }
+            Start-Sleep -Seconds 2
+          }
+          throw "Health check failed for $uri after 15 attempts."
+
+      - name: Print Docker diagnostics on failure
+        if: failure()
+        shell: pwsh
+        run: |
+          Write-Host '=== Docker containers ==='
+          docker container ls --all 2>&1 | Write-Output
+          Write-Host '=== health-tracker-hw3 container logs ==='
+          docker logs --tail 100 health-tracker-hw3 2>&1 | Write-Output
