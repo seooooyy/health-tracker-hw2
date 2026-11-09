@@ -59,6 +59,12 @@ input:focus { outline: none; }
 .result-value strong { font-size: 27px; letter-spacing: -1px; }
 .result-value span { color: #8b988e; font-size: 10px; }
 .category-badge { align-self: center; padding: 6px 9px; border-radius: 20px; color: var(--green-dark); background: #e0eee2; font-size: 11px; font-weight: 600; }
+.result-panel[data-category="underweight"] { border-color: #dce5f2; background: #f4f7fb; }
+.result-panel[data-category="underweight"] .category-badge { color: #526d91; background: #e5edf7; }
+.result-panel[data-category="overweight"] { border-color: #f0e4ca; background: #fcf8ef; }
+.result-panel[data-category="overweight"] .category-badge { color: #8a6827; background: #f5ebd5; }
+.result-panel[data-category="obese"] { border-color: #efd9d5; background: #fcf5f3; }
+.result-panel[data-category="obese"] .category-badge { color: #96554b; background: #f5e4e0; }
 .result-guidance { grid-column: 1 / -1; margin: 1px 0 0; color: #738279; font-size: 10px; line-height: 1.55; }
 .bmi-guide { margin-top: 21px; padding-top: 16px; border-top: 1px solid var(--line); }
 .guide-title { margin: 0 0 12px; color: #4e5d54; font-size: 11px; font-weight: 600; }

@@ -13,6 +13,7 @@
   const canvas = document.getElementById("bmi-chart");
   const emptyChart = document.getElementById("chart-empty");
   const recordsCount = document.getElementById("record-count");
+  const { calculateBMI, categoryForBMI, validateInput } = window.HealthTrackerBMI;
   let records = loadRecords();
 
   function localDateString(date) {
@@ -42,15 +43,6 @@
     }
   }
 
-  function categoryFor(bmi) {
-    if (bmi < 18.5) return { label: "저체중", guidance: "일반 범위보다 낮아요. 식사와 건강 상태를 함께 살펴보세요." };
-    if (bmi < 23) return { label: "정상", guidance: "일반적인 참고 범위에 있어요. 꾸준한 생활 습관을 이어가세요." };
-    if (bmi < 25) return { label: "과체중", guidance: "일반 참고 범위보다 높아요. 균형 잡힌 식사와 활동을 살펴보세요." };
-    if (bmi < 30) return { label: "비만 1단계", guidance: "BMI만으로 건강을 판단할 수 없어요. 필요하면 전문가와 상담해 보세요." };
-    if (bmi < 35) return { label: "비만 2단계", guidance: "개인의 건강 상태를 함께 확인할 수 있도록 전문가와 상담해 보세요." };
-    return { label: "비만 3단계", guidance: "BMI는 참고 지표예요. 정확한 평가는 의료 전문가와 상의해 주세요." };
-  }
-
   function showError(message) {
     errorBox.textContent = message;
     errorBox.style.color = "#b64b45";
@@ -66,16 +58,13 @@
     return `${year}년 ${Number(month)}월 ${Number(day)}일`;
   }
 
-  function calculate(heightCm, weightKg) {
-    return weightKg / ((heightCm / 100) ** 2);
-  }
-
   function renderResult(bmi) {
     const rounded = bmi.toFixed(1);
-    const category = categoryFor(bmi);
+    const category = categoryForBMI(bmi);
     document.getElementById("bmi-value").textContent = rounded;
     document.getElementById("bmi-category").textContent = category.label;
     document.getElementById("bmi-guidance").textContent = category.guidance;
+    resultBox.dataset.category = category.group;
     resultBox.hidden = false;
   }
 
@@ -102,7 +91,7 @@
       const value = document.createElement("strong");
       value.textContent = record.bmi.toFixed(1);
       const label = document.createElement("span");
-      label.textContent = categoryFor(record.bmi).label;
+      label.textContent = categoryForBMI(record.bmi).label;
       bmi.append(value, label);
 
       const remove = document.createElement("button");
@@ -199,11 +188,10 @@
     const height = Number(heightInput.value);
     const weight = Number(weightInput.value);
 
-    if (!date) return showError("기록 날짜를 선택해 주세요.");
-    if (!Number.isFinite(height) || height < 50 || height > 250) return showError("키는 50cm 이상 250cm 이하로 입력해 주세요.");
-    if (!Number.isFinite(weight) || weight < 10 || weight > 500) return showError("몸무게는 10kg 이상 500kg 이하로 입력해 주세요.");
+    const validationMessage = validateInput(date, height, weight);
+    if (validationMessage) return showError(validationMessage);
 
-    const bmi = calculate(height, weight);
+    const bmi = calculateBMI(height, weight);
     renderResult(bmi);
     const previous = records.find((record) => record.date === date);
     const next = { date, height, weight, bmi };
